@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="categories">
+    <ul>
+        <li><h2>Category</h2></li>
+        {% for category in categories %}
+        <li><a href="{{url_for('items', category_name=category.name)}}">{{ category.name }}</a></li>
+        {% endfor %}
+    </ul>
+</div>
+<div class="items">
+    <ul>
+        {% if 'username' in login_session %}
+            <li><a href="{{url_for('addItem')}}">Add item</a></li>
+        {% endif %}
+        <li><h2>{{ header }}</h2></li>
+        {% for item in items %}
+        <li><a href="{{url_for('item', category_name=items_categories[item.id], item_name=item.name)}}">{{ item.name }}</a>{{ ' (' + items_categories[item.id] + ')' if items_categories else '' }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}
+
+

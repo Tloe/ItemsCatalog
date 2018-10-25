@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+	<h1>Add item</h1>
+    <form action="#" method = "post">
+        <label for="name">Name:</label>
+        <input type="text" maxlenght="50" name="name" placeholder="Title of item"></br>
+
+        <label for="description">Description:</label>
+        <textarea class="form-control" maxlength="500" rows="5" name="description" placeholder="Item description"></textarea></br>
+
+        <label for="category_select">Category:</Label>
+        <select name='category_select'>
+            {% for category in categories %}
+            <option value="{{category.id}}">{{ category.name }}</option>
+            {% endfor %}
+        </select>
+        <a href="{{url_for('addCategory')}}">Add category</a></br>
+        
+        <button type="submit" type="submit">Submit</button>
+    </form>
+{% endblock %}

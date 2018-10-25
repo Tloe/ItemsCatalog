@@ -1,0 +1,90 @@
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+.container {
+    margin: 0;
+    width: 100%;
+    min-height: 100%;
+    border: 1px solid black;
+    background-color: lightgrey;
+}
+
+.header {
+    height: 100px;
+    background-color: navy;
+}
+
+.header-content {
+    margin-left: 200px;
+    margin-right: 200px;
+}
+
+.flash {
+    width: auto;
+    background-color: khaki;
+    margin: auto;
+    height: auto;
+}
+
+.flash-message {
+    display: inline;
+    float: none;
+}
+
+.content {
+    margin-top: 100px;
+    margin-left: 200px;
+    margin-right: 200px;
+
+    min-height: 300px;
+    border: 1px solid grey;
+    background-color: white;
+}
+
+.categories {
+    float: left;
+    width:49%;
+    min-height: 300px;
+    border-right: 1px solid grey;
+}
+
+.items {
+    /*border: 1px solid yellow;*/
+    float: left;
+    width:49%;
+}
+
+h1 {
+    color: white;
+    margin: 0;
+    display: inline;
+}
+
+h2 {
+    color: navy;
+    margin: 0;
+}
+
+ul {
+    list-style: none;
+}
+
+a.login_button {
+    margin: 0;
+    padding: 10px;
+    text-decoration: none;
+    background-color: OrangeRed;
+    color: white !important;
+    float: right;
+}
+
+a:link, a:visited, a:active {
+    color: OrangeRed;
+    text-decoration: none;
+}
+
+a:hover {
+    color: Red;
+}
