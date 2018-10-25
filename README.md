@@ -1,4 +1,4 @@
-#Project Item catalog
+## Project Item catalog
 
 Flask project for Udaicty fullstack course implemented acording to requirements.
 
