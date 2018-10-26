@@ -35,7 +35,8 @@ session = DBSession()
 
 @app.route('/login')
 def login():
-    state = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in xrange(32))
+    state = ''.join(random.choice(string.ascii_uppercase + string.digits)
+                    for x in range(32))
     login_session['state'] = state
     return render_template('login.html', STATE=state)
 
@@ -159,8 +160,10 @@ def gdisconnect():
                 json.dumps('Current user not connected.'), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
-    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % login_session[
-            'access_token']
+
+    pep8sux = login_session['access_token']
+    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % pep8sux
+
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]
     if result['status'] == '200':
