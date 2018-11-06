@@ -14,6 +14,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm.exc import MultipleResultsFound
 from db_setup import Base, User, Category, Item
+from functools import wraps
 import string
 import random
 import httplib2
@@ -43,6 +44,15 @@ def query_one_filter_by(model, **filter_by):
         return abort(404)
     except MultipleResultsFound:
         return abort(500)
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in login_session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 @app.route('/login')
@@ -260,9 +270,8 @@ def item(category_name, item_name):
 
 
 @app.route('/catalog/addItem', methods=['GET', 'POST'])
+@login_required
 def addItem():
-    if 'username' not in login_session:
-        return redirect(url_for('login'))
     if request.method == 'POST':
         addedItem = Item(name=request.form['name'],
                          user_id=login_session['user_id'],
@@ -283,9 +292,8 @@ def addItem():
 
 
 @app.route('/catalog/<string:item_name>/edit', methods=['GET', 'POST'])
+@login_required
 def editItem(item_name):
-    if 'username' not in login_session:
-        return redirect(url_for('login'))
     item = query_one_filter_by(Item, name=item_name)
     if request.method == 'POST':
         item.name = request.form['name']
@@ -306,9 +314,8 @@ def editItem(item_name):
 
 
 @app.route('/catalog/<string:item_name>/delete', methods=['GET', 'POST'])
+@login_required
 def deleteItem(item_name):
-    if 'username' not in login_session:
-        return redirect(url_for('login'))
     item = query_one_filter_by(Item, name=item_name)
     if request.method == 'POST':
         session.delete(item)
@@ -321,9 +328,8 @@ def deleteItem(item_name):
 
 
 @app.route('/catalog/addCategory', methods=['GET', 'POST'])
+@login_required
 def addCategory():
-    if 'username' not in login_session:
-        return redirect(url_for('login'))
     if request.method == 'POST':
         addedCategory = Category(name=request.form['category'])
         if session.query(Category).filter_by(
