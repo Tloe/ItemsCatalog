@@ -14,6 +14,10 @@ I have included a catalog.db file with this project for testing.
 
 To test with a blank database either delete or make a backup of catalog.db.
 
+There is a requirement.txt file. Run the following command to install them with pip
+
+`pip install -r requirements.txt`
+
 Run the db_setup.py to setup the database model.
 
 `python db_setup.py`

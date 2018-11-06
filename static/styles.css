@@ -56,6 +56,12 @@ html, body {
     width:49%;
 }
 
+.login_picture {
+    width: 150px,
+    height: 150px,
+    border-radius: 150px
+}
+
 h1 {
     color: white;
     margin: 0;
