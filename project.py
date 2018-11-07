@@ -26,8 +26,9 @@ from oauth2client.client import FlowExchangeError
 
 app = Flask(__name__)
 
+CLIENT_SECRETS_FILE = 'client_secrets.json'
 CLIENT_ID = json.loads(
-        open('client_secrets.json', 'r').read())['web']['client_id']
+        open(CLIENT_SECRETS_FILE, 'r').read())['web']['client_id']
 APPLICATION_NAME = "CatalogProject"
 
 engine = create_engine('sqlite:///catalog.db')
@@ -41,9 +42,9 @@ def query_one_filter_by(model, **filter_by):
     try:
         return session.query(model).filter_by(**filter_by).one()
     except NoResultFound:
-        return abort(404)
+        abort(404)
     except MultipleResultsFound:
-        return abort(500)
+        abort(500)
 
 
 def login_required(f):
@@ -73,14 +74,11 @@ def createUser(login_sessions):
     return user.id
 
 
-def getUserInfo(user_id):
-    user = query_one_filter_by(User, id=user_id)
-    return user
-
-
 def getUserID(email):
-    user = query_one_filter_by(User, email=email)
-    return user.id
+    try:
+        return session.query(User).filter_by(email=email).one().id
+    except (NoResultFound, MultipleResultsFound) as e:
+        return None
 
 
 @app.route('/gconnect', methods=['post'])
@@ -95,7 +93,7 @@ def gconnect():
 
     try:
         ''' Upgrade the authorization code into a credentials object '''
-        oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
+        oauth_flow = flow_from_clientsecrets(CLIENT_SECRETS_FILE, scope='')
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
     except FlowExchangeError:
@@ -355,9 +353,12 @@ def page_not_found(e):
 def internal_server_error(e):
     return render_template('error500.html', login_session=login_session), 500
 
-if __name__ == '__main__':
+def setup_app():
     app.secret_key = "super_secret_key"
     app.register_error_handler(403, forbidden_page)
     app.register_error_handler(404, page_not_found)
     app.register_error_handler(500, internal_server_error)
+
+if __name__ == '__main__':
+    setup_app()
     app.run(host='0.0.0.0', port=5000, threaded=False, debug=True)
