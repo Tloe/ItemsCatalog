@@ -358,7 +358,9 @@ def setup_app():
     app.register_error_handler(403, forbidden_page)
     app.register_error_handler(404, page_not_found)
     app.register_error_handler(500, internal_server_error)
+    app.threaded=False
+    app.debug=True
 
 if __name__ == '__main__':
     setup_app()
-    app.run(host='0.0.0.0', port=5000, threaded=False, debug=True)
+    app.run(host='0.0.0.0', port=5000)
