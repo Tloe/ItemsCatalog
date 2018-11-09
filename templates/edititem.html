@@ -4,10 +4,10 @@
 	<h1>Edit item</h1>
     <form action="#" method = "post">
         <label for="name">Name:</label>
-        <input type="text" maxlenght="50" name="name" value="{{ item.name }}"></br>
+        <input type="text" maxlenght="50" name="name" value="{{ item.name }}" required></br>
 
         <label for="description">Description:</label>
-        <textarea class="form-control" maxlength="500" rows="5" name="description" placeholder="Item description">{{ item.description }}</textarea></br>
+        <textarea class="form-control" maxlength="500" rows="5" name="description" placeholder="Item description">{{ item.description }}</textarea required></br>
 
         <label for="category_select">Category:</Label>
         <select name='category_select'>

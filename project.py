@@ -1,3 +1,28 @@
+'''
+ItemsCatalog.py
+
+Implementation for the view of Catalog Item project for the Fullstack Web
+development nanodegree at Udacity.com
+
+Attributes:
+    CLIENT_SECRETS_FILE (str): path to the google oauth api client secret json
+    file
+
+    CLIENT_ID (str): client_id for the google oauth api. Loaded from
+    CLIENT_SECRETS_FILE
+
+    app (Flask): The flask application Module
+
+    engine (sqlalchemy.engine.Engine): sqlalchemy Engine object created with
+    sqlalchemy's create_engine()
+
+    dbsession (sqlalchemy.orm.session.sessionmaker): sqlalchemy sessionmaker
+    factory
+
+    session: (sqlalchemy.orm.session.sessionmaker): sql alchemy Session object
+    created with the sessionmaker factory.
+'''
+
 from flask import Flask
 from flask import render_template
 from flask import request
@@ -13,8 +38,15 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm.exc import MultipleResultsFound
-from db_setup import Base, User, Category, Item
+from sqlalchemy import desc
+
+from db_setup import Base
+from db_setup import User
+from db_setup import Category
+from db_setup import Item
+
 from functools import wraps
+
 import string
 import random
 import httplib2
@@ -24,21 +56,29 @@ import requests
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 
-app = Flask(__name__)
-
 CLIENT_SECRETS_FILE = 'client_secrets.json'
 CLIENT_ID = json.loads(
         open(CLIENT_SECRETS_FILE, 'r').read())['web']['client_id']
-APPLICATION_NAME = "CatalogProject"
+
+app = Flask(__name__)
 
 engine = create_engine('sqlite:///catalog.db')
 Base.metadata.bind = engine
 
-DBSession = sessionmaker(bind=engine)
-session = DBSession()
+dbsession = sessionmaker(bind=engine)
+session = dbsession()
 
 
 def query_one_filter_by(model, **filter_by):
+    '''
+    Args:
+        model (SomeMappedClass): Model defenition to pass to query()
+
+        **filter_by: kwargs to pass to filter_by()
+
+    Returns:
+        Returns one result from database or calling abort()
+    '''
     try:
         return session.query(model).filter_by(**filter_by).one()
     except NoResultFound:
@@ -48,8 +88,24 @@ def query_one_filter_by(model, **filter_by):
 
 
 def login_required(f):
+    '''
+    Forces login required for sections that needs it
+
+    Args:
+        f (function): function to wrap
+
+    Returns:
+        decorated_function (function): the decorated decorated_function
+    '''
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        '''
+        Checks that the user is in login_session thus logged in
+
+        Args:
+        *args: *args to pass to f
+        **kwargs: **kwargs to pass to f
+        '''
         if 'username' not in login_session:
             return redirect(url_for('login'))
         return f(*args, **kwargs)
@@ -58,6 +114,12 @@ def login_required(f):
 
 @app.route('/login')
 def login():
+    '''
+    Shows the login page
+
+    Returns:
+        render_template: render_template object for login.html
+    '''
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in range(32))
     login_session['state'] = state
@@ -65,6 +127,15 @@ def login():
 
 
 def createUser(login_sessions):
+    '''
+    Creates a new user entry in the database
+
+    Args:
+        login_session (flask.session): login_session object for this project
+
+    Returns:
+        int: user id for the new user
+    '''
     newUser = User(name=login_session['username'],
                    email=login_session['email'],
                    picture=login_session['picture'])
@@ -75,6 +146,15 @@ def createUser(login_sessions):
 
 
 def getUserID(email):
+    '''
+    Gets a user id from database based on email
+
+    Args:
+        email (str): e-mail to use for database lookup
+
+    Returns:
+        user id or None if user not found
+    '''
     try:
         return session.query(User).filter_by(email=email).one().id
     except (NoResultFound, MultipleResultsFound) as e:
@@ -83,6 +163,13 @@ def getUserID(email):
 
 @app.route('/gconnect', methods=['post'])
 def gconnect():
+    '''
+    Setup for google oauth authorization
+
+    Returns:
+        Error response object if it fails or welcome message on success.
+    '''
+
     ''' Validate state token '''
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
@@ -146,6 +233,7 @@ def gconnect():
     params = {'access_token': credentials.access_token, 'alt': 'json'}
     answer = requests.get(userinfo_url, params=params)
 
+    ''' Store user info'''
     data = answer.json()
     login_session['username'] = data['name'] if 'name' in data else ''
     login_session['picture'] = data['picture'] if 'picture' in data else ''
@@ -157,6 +245,7 @@ def gconnect():
         user_id = createUser(login_session)
     login_session['user_id'] = user_id
 
+    ''' Show welcome message and logged in flash message'''
     flash("You are now logged in as %s" % login_session['username'])
     output = ''
     output += '<h1>Welcome, '
@@ -174,6 +263,13 @@ def gconnect():
 
 @app.route('/gdisconnect')
 def gdisconnect():
+    '''
+    Disconnect google oauth authorization and delete stored data.
+
+    Returns:
+        Error object if user was not connected or redirect object to 'main'
+        route
+    '''
     access_token = login_session.get('access_token')
     if access_token is None:
         response = make_response(
@@ -201,6 +297,12 @@ def gdisconnect():
 
 @app.route('/catalog/JSON')
 def mainJSON():
+    '''
+    Shows the main json endpoint with the full catalog listing
+
+    Returns:
+        json string with the whole catalog listing
+    '''
     categories = session.query(Category).all()
     result = []
     for category in categories:
@@ -213,6 +315,16 @@ def mainJSON():
 
 @app.route('/catalog/<string:category_name>/JSON')
 def itemsJSON(category_name):
+    '''
+    Shows a json listing of catalog items in the category supplied in the
+    category_name argument
+
+    Args:
+        category_name (str): route parameter for Category.name
+
+    Returns:
+        json string with the catalog items in the category supplied
+    '''
     category_id = query_one_filter_by(Category, name=category_name).id
     items = session.query(Item).filter_by(category_id=category_id)
     return jsonify(
@@ -221,6 +333,16 @@ def itemsJSON(category_name):
 
 @app.route('/catalog/<string:category_name>/<string:item_name>/JSON')
 def itemJSON(category_name, item_name):
+    '''
+    Shows a json item listing for one item in the catalog
+
+    Args:
+        category_name (str): route parameter for Category.name
+        item_name (str): route parameter for Item.name
+
+    Returns:
+        json string with the item
+    '''
     item = query_one_filter_by(Item, name=item_name)
     return jsonify({'Item': item.serialize})
 
@@ -228,8 +350,15 @@ def itemJSON(category_name, item_name):
 @app.route('/')
 @app.route('/catalog')
 def main():
+    '''
+    The main route for both domain/ and domain/catalog. Shows item catalog
+    with the latest added items
+
+    Returns:
+        render_template for items.html with latest added items
+    '''
     categories = session.query(Category).all()
-    items = session.query(Item).order_by("id").limit(10)
+    items = session.query(Item).order_by(desc("id")).limit(10)
     items_categories = {}
     for item in items:
         items_categories[item.id] = query_one_filter_by(
@@ -244,6 +373,15 @@ def main():
 
 @app.route('/catalog/<string:category_name>')
 def items(category_name):
+    '''
+    Shows item catalog with the selected category
+
+    Args:
+        category_name (str): route parameter for Category.name
+
+    Returns:
+        render_template for items.html with items of selected category
+    '''
     categories = session.query(Category).all()
     category_id = query_one_filter_by(Category, name=category_name).id
     items = session.query(Item).filter_by(category_id=category_id)
@@ -261,15 +399,42 @@ def items(category_name):
 
 @app.route('/catalog/<string:category_name>/<string:item_name>')
 def item(category_name, item_name):
+    '''
+    Shows a item listing for one item in the catalog
+
+    Args:
+        category_name (str): route parameter for Category.name
+        item_name (str): route parameter for Item.name
+
+    Returns:
+        render_template for item.html listing the selected item
+    '''
     item = query_one_filter_by(Item, name=item_name)
+    if 'username' in login_session:
+        user = query_one_filter_by(User, name=login_session['username'])
+    else:
+        user = None
+    print(user.id)
+    print(item.user_id)
     return render_template('item.html',
                            item=item,
+                           user=user,
                            login_session=login_session)
 
 
 @app.route('/catalog/addItem', methods=['GET', 'POST'])
 @login_required
 def addItem():
+    '''
+    GET Shows a form to add item.
+
+    POST adds a new item to the database. As we are using Item.name for routes
+    we need to check the uniqueness of the item name.
+
+    Returns
+        For a successful POST we return a redirect object to the 'main' route.
+        For GET or unsuccessful POST we return the additem.html template.
+    '''
     if request.method == 'POST':
         addedItem = Item(name=request.form['name'],
                          user_id=login_session['user_id'],
@@ -292,7 +457,25 @@ def addItem():
 @app.route('/catalog/<string:item_name>/edit', methods=['GET', 'POST'])
 @login_required
 def editItem(item_name):
+    '''
+    GET shows a form to edit item
+
+    POST updates the item according to the edit form. As we are using Item.name
+    for routes we need to check for uniqueness of the item name.
+
+    Args:
+        item_name (str): route parameter for Item.name to be edited
+
+    Returns:
+        For a successful POST or if user is not allowed to edit this item we
+        return a redirect object to the 'main' route.
+        For GET or unsuccessful POST we return the edititem.html template.
+    '''
     item = query_one_filter_by(Item, name=item_name)
+    if item.user_id != login_session['user_id']:
+        flash('Not allowed to edit item created by other user!')
+        return redirect(url_for('main'))
+
     if request.method == 'POST':
         item.name = request.form['name']
         item.category_id = request.form['category_select']
@@ -314,7 +497,22 @@ def editItem(item_name):
 @app.route('/catalog/<string:item_name>/delete', methods=['GET', 'POST'])
 @login_required
 def deleteItem(item_name):
+    '''
+    GET shows form to confirm deletion of item
+
+    POST shows deletes the item
+
+    Returns:
+        For POST or if user is not allowed to delete this item we return
+        redirect object to 'main' route.
+        GET return render_template for deleteitem.html to ask for
+        confirmation.
+    '''
     item = query_one_filter_by(Item, name=item_name)
+    if item.user_id != login_session['user_id']:
+        flash('Not allowed to delete item created by other user!')
+        return redirect(url_for('main'))
+
     if request.method == 'POST':
         session.delete(item)
         session.commit()
@@ -328,6 +526,17 @@ def deleteItem(item_name):
 @app.route('/catalog/addCategory', methods=['GET', 'POST'])
 @login_required
 def addCategory():
+    '''
+    GET show form for adding category
+
+    POST add category. As we are using Category.name for routes we need to
+    check for uniqueness
+
+    Returns:
+        For a successful POST we return a redirect object to the 'main' route.
+        For GET or unsuccessful POST we return the addcategory.html
+        render_template.
+    '''
     if request.method == 'POST':
         addedCategory = Category(name=request.form['category'])
         if session.query(Category).filter_by(
@@ -345,21 +554,46 @@ def addCategory():
 
 
 def forbidden_page(e):
+    '''
+    Error handler for 403 forbidden page
+
+    Returns:
+        returns template for error403.html
+    '''
     return render_template('error403.html', login_session=login_session), 403
 
+
 def page_not_found(e):
+    '''
+    Error handler for 404 page not found
+
+    Returns:
+        returns template for error404.html
+    '''
     return render_template('error404.html', login_session=login_session), 404
 
+
 def internal_server_error(e):
+    '''
+    Error handler for 500 Internal Server Error
+
+    Returns:
+        returns template for error500.html
+    '''
     return render_template('error500.html', login_session=login_session), 500
 
+
 def setup_app():
+    '''
+    Setup function for flask app
+    '''
     app.secret_key = "super_secret_key"
     app.register_error_handler(403, forbidden_page)
     app.register_error_handler(404, page_not_found)
     app.register_error_handler(500, internal_server_error)
-    app.threaded=False
-    app.debug=True
+    app.threaded = False
+    app.debug = True
+
 
 if __name__ == '__main__':
     setup_app()

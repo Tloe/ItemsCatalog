@@ -6,6 +6,16 @@ Base = declarative_base()
 
 
 class User(Base):
+    '''
+    User table class for sqlalchemy
+
+    Attributes:
+        id (Column): Integer id column
+        name (Column): String name column
+        email (Column): String email column
+        picture (Column): String picture url column
+    '''
+
     __tablename__ = 'user'
 
     id = Column(Integer, primary_key=True)
@@ -15,6 +25,12 @@ class User(Base):
 
     @property
     def serialize(self):
+        '''
+        Serialization of attributes into dict used for json
+
+        Returns:
+            dict of attributes
+        '''
         return {
             'name': self.name,
             'email': self.email,
@@ -24,6 +40,13 @@ class User(Base):
 
 
 class Category(Base):
+    '''
+    Category table class for sqlalchemy
+
+    Attributes:
+        id (Column): Integer id column
+        name (Column): String name column
+    '''
     __tablename__ = 'category'
 
     id = Column(Integer, primary_key=True)
@@ -31,6 +54,12 @@ class Category(Base):
 
     @property
     def serialize(self):
+        '''
+        Serialization of attributes into dict used for json
+
+        Returns:
+            dict of attributes
+        '''
         return {
             'id': self.id,
             'name': self.name,
@@ -38,6 +67,16 @@ class Category(Base):
 
 
 class Item(Base):
+    '''
+    Item table class for sqlalchemy
+
+    Attributes:
+        id (Column): Integer id column
+        name (Column): String name column
+        user_id (Column): String email column
+        category_id (Column): String picture url column
+        description (Column): String describig the item
+    '''
     __tablename__ = 'item'
 
     id = Column(Integer, primary_key=True)
@@ -48,6 +87,12 @@ class Item(Base):
 
     @property
     def serialize(self):
+        '''
+        Serialization of attributes into dict used for json
+
+        Returns:
+            dict of attributes
+        '''
         return {
             'id': self.id,
             'name': self.name,
